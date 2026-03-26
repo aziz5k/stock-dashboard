@@ -7,331 +7,99 @@
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;900&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
-  :root {
-    --bg: #0a0e1a;
-    --surface: #111827;
-    --surface2: #1a2235;
-    --border: #1e2d45;
-    --accent: #00d4ff;
-    --accent2: #ff6b35;
-    --accent3: #00ff9d;
-    --accent4: #ffd700;
-    --text: #e2e8f0;
-    --text-muted: #6b7fa3;
-    --red: #ff4757;
-    --green: #00ff9d;
-  }
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body {
-    font-family: 'Tajawal', sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
-
-  /* GRID BACKGROUND */
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background-image:
-      linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
-    background-size: 40px 40px;
-    pointer-events: none;
-    z-index: 0;
-  }
-
-  .container { position: relative; z-index: 1; max-width: 1400px; margin: 0 auto; padding: 24px; }
-
-  /* HEADER */
-  .header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 32px;
-    padding-bottom: 20px;
-    border-bottom: 1px solid var(--border);
-  }
-  .header-left h1 {
-    font-size: 28px;
-    font-weight: 900;
-    background: linear-gradient(135deg, var(--accent), var(--accent3));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    letter-spacing: -0.5px;
-  }
-  .header-left p { color: var(--text-muted); font-size: 14px; margin-top: 4px; }
-  .header-right {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-  }
-  .badge {
-    padding: 6px 14px;
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: 700;
-    letter-spacing: 0.5px;
-  }
-  .badge-blue { background: rgba(0,212,255,0.15); color: var(--accent); border: 1px solid rgba(0,212,255,0.3); }
-  .badge-green { background: rgba(0,255,157,0.15); color: var(--accent3); border: 1px solid rgba(0,255,157,0.3); }
-
-  /* KPI CARDS */
-  .kpi-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 16px;
-    margin-bottom: 24px;
-  }
-  .kpi-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 20px;
-    position: relative;
-    overflow: hidden;
-    transition: transform 0.2s, border-color 0.2s;
-    animation: fadeUp 0.5s ease both;
-  }
-  .kpi-card:hover { transform: translateY(-3px); border-color: var(--accent); }
-  
-  .kpi-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
-  .kpi-value { font-size: 32px; font-weight: 900; letter-spacing: -1px; line-height: 1; }
-  .kpi-sub { font-size: 12px; color: var(--text-muted); margin-top: 8px; }
-  .kpi-delta {
-    display: inline-flex; align-items: center; gap: 4px;
-    font-size: 12px; font-weight: 700;
-    padding: 3px 8px; border-radius: 10px; margin-top: 8px;
-  }
-  .delta-down { background: rgba(0,255,157,0.15); color: var(--green); }
-  .delta-up { background: rgba(255,71,87,0.15); color: var(--red); }
-  .delta-neutral { background: rgba(107,127,163,0.15); color: var(--text-muted); }
-
-  /* CHARTS ROW */
-  .charts-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-    margin-bottom: 24px;
-  }
-  .chart-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 24px;
-    animation: fadeUp 0.5s ease 0.4s both;
-  }
-  .chart-card-wide {
-    grid-column: span 2;
-    animation-delay: 0.3s;
-  }
-  .card-title {
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    margin-bottom: 20px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .card-title::before {
-    content: '';
-    width: 3px; height: 14px;
-    border-radius: 2px;
-    background: var(--accent);
-  }
-  .chart-container { position: relative; height: 220px; }
-
-  /* TABLES */
-  .table-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 24px;
-    margin-bottom: 24px;
-    animation: fadeUp 0.5s ease 0.5s both;
-  }
-  table { width: 100%; border-collapse: collapse; }
-  th {
-    font-size: 11px;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    padding: 10px 16px;
-    text-align: right;
-    border-bottom: 1px solid var(--border);
-    font-weight: 500;
-  }
-  td {
-    padding: 12px 16px;
-    font-size: 13px;
-    border-bottom: 1px solid rgba(30,45,69,0.5);
-    transition: background 0.15s;
-  }
-  tr:hover td { background: rgba(0,212,255,0.04); }
-  tr:last-child td { border-bottom: none; }
-  .td-number { font-weight: 700; font-variant-numeric: tabular-nums; }
-
-  /* ANIMATIONS */
-  @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  /* RESPONSIVE */
-  @media (max-width: 900px) {
-    .kpi-grid { grid-template-columns: repeat(2, 1fr); }
-    .charts-row { grid-template-columns: 1fr; }
-    .chart-card-wide { grid-column: span 1; }
-  }
-  @media (max-width: 600px) {
-    .kpi-grid { grid-template-columns: 1fr 1fr; }
-    .header { flex-direction: column; align-items: flex-start; gap: 12px; }
-  }
+:root {
+  --bg: #0a0e1a; --surface: #111827; --accent: #00d4ff; --accent3: #00ff9d; 
+  --text: #e2e8f0; --text-muted: #6b7fa3; --red: #ff4757;
+}
+body {
+  font-family: 'Tajawal', sans-serif; background: var(--bg); color: var(--text);
+  margin: 0; padding: 24px; direction: rtl;
+}
+.container { max-width: 1200px; margin: 0 auto; text-align: center; }
+.header h1 { color: var(--accent); margin-bottom: 20px; font-size: 32px; }
+.status { background: var(--surface); padding: 30px; border-radius: 16px; 
+  margin: 20px 0; border: 2px solid var(--accent); }
+.products-link { 
+  background: linear-gradient(135deg, rgba(0,212,255,0.2), rgba(0,255,157,0.2)); 
+  border: 1px solid var(--accent); border-radius: 16px; padding: 20px; 
+  margin: 20px 0; text-align: center;
+}
+.kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin: 40px 0; }
+.kpi-card { background: var(--surface); padding: 20px; border-radius: 12px; border: 1px solid #333; }
+.kpi-value { font-size: 32px; font-weight: bold; color: var(--accent3); margin: 10px 0; }
+.chart-container { background: var(--surface); padding: 20px; border-radius: 12px; margin: 20px 0; height: 400px; }
+.charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0; }
+.chart-card { background: var(--surface); padding: 20px; border-radius: 12px; height: 300px; }
+.btn-products { display: inline-block; background: var(--accent); color: var(--bg); 
+  text-decoration: none; padding: 12px 24px; border-radius: 8px; 
+  font-weight: 700; transition: all 0.2s; margin-top: 10px; }
+.btn-products:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,212,255,0.3); }
 </style>
 </head>
 <body>
 <div class="container">
-
-  <!-- HEADER -->
   <div class="header">
-    <div class="header-left">
-      <h1>داشبورد حركة المخزون</h1>
-      <p>تحليل المخزون للفترة: 18 – 20 مارس 2026</p>
-    </div>
-    <div class="header-right">
-      <span class="badge badge-blue">المستودعات الرئيسية</span>
-      <span class="badge badge-green">مبيعات السيارات</span>
-    </div>
+    <h1>داشبورد حركة المخزون</h1>
+    <p>تحليل بيانات المخزون: 18-20 مارس 2026</p>
   </div>
 
-  <!-- KPI CARDS -->
+  <div class="status">
+    <h2 style="color: var(--accent)">✅ تم رفع الداشبورد بنجاح!</h2>
+    <p>الداشبورد متاح الآن على الرابط المباشر مع جميع المخططات التفاعلية</p>
+  </div>
+
+  <div class="products-link">
+    <h3 style="color: var(--accent); margin-bottom: 16px;">📊 تفاصيل المنتجات</h3>
+    <p style="margin-bottom: 16px;">عرض جميع المنتجات (15 صنف) مع الفلترة والتفاصيل الكاملة</p>
+    <a href="products.html" class="btn-products">🔍 عرض تفاصيل المنتجات</a>
+  </div>
+
   <div class="kpi-grid">
     <div class="kpi-card">
-      <div class="kpi-label">إجمالي المخزون (18 مارس)</div>
-      <div class="kpi-value" style="color:var(--accent)">223,899</div>
-      <div class="kpi-sub">كرتون - إجمالي المستودعات الرئيسية</div>
+      <h3>إجمالي المخزون الرئيسي</h3>
+      <div class="kpi-value">223,899</div>
+      <p>كرتون - 18 مارس</p>
     </div>
     <div class="kpi-card">
-      <div class="kpi-label">حركة المخزون (18→20)</div>
-      <div class="kpi-value" style="color:var(--accent3)">2.66</div>
-      <div class="kpi-sub">كرتون تم صرفه</div>
-      <span class="kpi-delta delta-down">↓ 0.001%</span>
+      <h3>حركة المخزون</h3>
+      <div class="kpi-value">2.66</div>
+      <p>كرتون تم صرفه (18→20)</p>
     </div>
     <div class="kpi-card">
-      <div class="kpi-label">مخزون السيارات (Van Sales)</div>
-      <div class="kpi-value" style="color:var(--accent2)">9,001</div>
-      <div class="kpi-sub">كرتون / كيس موزع على الفرق</div>
+      <h3>مخزون السيارات</h3>
+      <div class="kpi-value">9,001</div>
+      <p>كرتون موزع على الفرق</p>
     </div>
     <div class="kpi-card">
-      <div class="kpi-label">المخزون التالف</div>
-      <div class="kpi-value" style="color:var(--red)">1,280</div>
-      <div class="kpi-sub">كرتون (فحم فيتنامي الأكثر تضررًا)</div>
-      <span class="kpi-delta delta-up">⚠ 22 صنف تالف</span>
+      <h3>المخزون التالف</h3>
+      <div class="kpi-value" style="color: var(--red)">1,280</div>
+      <p>كرتون تالف</p>
     </div>
   </div>
 
-  <!-- CHARTS ROW 1 -->
-  <div class="charts-row">
-    <div class="chart-card chart-card-wide">
-      <div class="card-title">تطور إجمالي المخزون الرئيسي عبر 3 أيام</div>
-      <div class="chart-container">
-        <canvas id="trendChart"></canvas>
-      </div>
-    </div>
+  <div class="chart-container">
+    <h3>تطور إجمالي المخزون الرئيسي عبر 3 أيام</h3>
+    <canvas id="trendChart" width="400" height="200"></canvas>
   </div>
 
   <div class="charts-row">
     <div class="chart-card">
-      <div class="card-title">توزيع المخزون على المستودعات (18 مارس)</div>
-      <div class="chart-container">
-        <canvas id="warehouseChart"></canvas>
-      </div>
+      <h3>توزيع المخزون على المستودعات (18 مارس)</h3>
+      <canvas id="warehouseChart"></canvas>
     </div>
     <div class="chart-card">
-      <div class="card-title">توزيع مخزون السيارات (Van Sales)</div>
-      <div class="chart-container">
-        <canvas id="vanChart"></canvas>
-      </div>
+      <h3>توزيع مخزون السيارات (Van Sales)</h3>
+      <canvas id="vanChart"></canvas>
     </div>
   </div>
 
-  <!-- WAREHOUSE BREAKDOWN TABLE -->
-  <div class="table-card">
-    <div class="card-title">تفاصيل المستودعات الرئيسية</div>
-    <table>
-      <thead>
-        <tr>
-          <th>المستودع</th>
-          <th>المخزون (18 مارس)</th>
-          <th>المخزون (20 مارس)</th>
-          <th>الحركة</th>
-          <th>النسبة من الإجمالي</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td style="font-weight:600;color:#00d4ff">الرياض (الدفاع)</td>
-          <td class="td-number">214,342</td>
-          <td class="td-number">214,342</td>
-          <td><span class="kpi-delta delta-neutral">ثابت</span></td>
-          <td class="td-number">95.7%</td>
-        </tr>
-        <tr>
-          <td style="font-weight:600;color:#00ff9d">القصيم</td>
-          <td class="td-number">135,558</td>
-          <td class="td-number">135,558</td>
-          <td><span class="kpi-delta delta-neutral">ثابت</span></td>
-          <td class="td-number">60.5%</td>
-        </tr>
-        <tr>
-          <td style="font-weight:600;color:#ff6b35">الدمام</td>
-          <td class="td-number">17,081</td>
-          <td class="td-number">17,075</td>
-          <td><span class="kpi-delta delta-down">↓ 5.33</span></td>
-          <td class="td-number">7.6%</td>
-        </tr>
-        <tr>
-          <td style="font-weight:600;color:#ffd700">جدة</td>
-          <td class="td-number">14,894</td>
-          <td class="td-number">14,894</td>
-          <td><span class="kpi-delta delta-neutral">ثابت</span></td>
-          <td class="td-number">6.7%</td>
-        </tr>
-        <tr>
-          <td style="font-weight:600;color:#a78bfa">خميس مشيط</td>
-          <td class="td-number">58,485</td>
-          <td class="td-number">58,485</td>
-          <td><span class="kpi-delta delta-neutral">ثابت</span></td>
-          <td class="td-number">26.1%</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-
-  <div class="footer" style="text-align: center; color: var(--text-muted); font-size: 12px; padding: 24px 0;">
+  <div style="text-align: center; color: var(--text-muted); font-size: 12px; padding: 24px 0;">
     تم توليد هذا التقرير تلقائياً بواسطة Claude · بيانات: TotalStockQuantity 18-20 مارس 2026
   </div>
 </div>
 
 <script>
-// Data
-const warehouseData = {
-  names: ['الرياض', 'القصيم', 'الدمام', 'جدة', 'خميس مشيط'],
-  day18: [214342, 135558, 17081, 14894, 58485],
-  day20: [214342, 135558, 17075, 14894, 58485],
-};
-
-const vanData = {
-  reps: ['عمار قاسم', 'ترانزيت', 'Van Sales', 'ماجد ناجي', 'محمد علي'],
-  totals: [2679, 4701, 243, 800, 444],
-};
-
-// Chart: Trend
+// Trend Chart
 const trendCtx = document.getElementById('trendChart').getContext('2d');
 new Chart(trendCtx, {
   type: 'line',
@@ -339,12 +107,22 @@ new Chart(trendCtx, {
     labels: ['18 مارس', '19 مارس', '20 مارس'],
     datasets: [{
       label: 'المستودعات الرئيسية',
-      data: [223899, 223897, 223897],
+      data: [223899.05, 223896.39, 223896.39],
       borderColor: '#00d4ff',
       backgroundColor: 'rgba(0,212,255,0.08)',
       fill: true,
       tension: 0.4,
       pointBackgroundColor: '#00d4ff',
+      pointRadius: 6,
+      borderWidth: 2.5,
+    }, {
+      label: 'مستودعات السيارات',
+      data: [9001.35, 9004.02, 9004.02],
+      borderColor: '#ff6b35',
+      backgroundColor: 'rgba(255,107,53,0.08)',
+      fill: true,
+      tension: 0.4,
+      pointBackgroundColor: '#ff6b35',
       pointRadius: 6,
       borderWidth: 2.5,
     }]
@@ -353,26 +131,50 @@ new Chart(trendCtx, {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-      legend: { labels: { color: '#6b7fa3', font: { family: 'Tajawal' } } }
+      legend: { labels: { color: '#6b7fa3', font: { family: 'Tajawal', size: 12 } } },
+      tooltip: {
+        backgroundColor: '#111827',
+        borderColor: '#1e2d45',
+        borderWidth: 1,
+        titleColor: '#e2e8f0',
+        bodyColor: '#6b7fa3',
+        titleFont: { family: 'Tajawal' },
+        bodyFont: { family: 'Tajawal' },
+        callbacks: {
+          label: ctx => ` ${ctx.dataset.label}: ${ctx.raw.toLocaleString('ar-SA')} كرتون`
+        }
+      }
     },
     scales: {
-      y: { grid: { color: 'rgba(30,45,69,0.5)' }, ticks: { color: '#6b7fa3', font: { family: 'Tajawal' } } },
-      x: { grid: { color: 'rgba(30,45,69,0.3)' }, ticks: { color: '#6b7fa3', font: { family: 'Tajawal' } } }
+      y: {
+        grid: { color: 'rgba(30,45,69,0.5)' },
+        ticks: { color: '#6b7fa3', font: { family: 'Tajawal', size: 11 }, 
+                callback: v => v.toLocaleString('ar-SA') }
+      },
+      x: {
+        grid: { color: 'rgba(30,45,69,0.3)' },
+        ticks: { color: '#6b7fa3', font: { family: 'Tajawal', size: 12 } }
+      }
     }
   }
 });
 
-// Chart: Warehouse Pie
+// Warehouse Pie Chart
+const whData = {
+  names: ['الرياض (الدفاع)', 'القصيم', 'الدمام', 'جدة', 'خميس مشيط', 'ترانزيت رئيسي'],
+  values: [214342.19, 135557.83, 17080.51, 14894.27, 58485.22, 4974.00]
+};
 const whCtx = document.getElementById('warehouseChart').getContext('2d');
 new Chart(whCtx, {
   type: 'doughnut',
   data: {
-    labels: warehouseData.names,
+    labels: whData.names,
     datasets: [{
-      data: warehouseData.day18,
-      backgroundColor: ['#00d4ff','#00ff9d','#ff6b35','#ffd700','#a78bfa'],
+      data: whData.values,
+      backgroundColor: ['#00d4ff','#00ff9d','#ff6b35','#ffd700','#a78bfa','#f472b6'],
       borderColor: '#111827',
       borderWidth: 2,
+      hoverOffset: 8,
     }]
   },
   options: {
@@ -380,34 +182,76 @@ new Chart(whCtx, {
     maintainAspectRatio: false,
     cutout: '65%',
     plugins: {
-      legend: { position: 'bottom', labels: { color: '#6b7fa3', font: { family: 'Tajawal', size: 11 } } }
+      legend: {
+        position: 'bottom',
+        labels: { color: '#6b7fa3', font: { family: 'Tajawal', size: 10 }, padding: 8, boxWidth: 10 }
+      },
+      tooltip: {
+        backgroundColor: '#111827',
+        borderColor: '#1e2d45',
+        borderWidth: 1,
+        titleColor: '#e2e8f0',
+        bodyColor: '#6b7fa3',
+        titleFont: { family: 'Tajawal' },
+        bodyFont: { family: 'Tajawal' },
+        callbacks: {
+          label: ctx => ` ${ctx.raw.toLocaleString('ar-SA')} كرتون`
+        }
+      }
     }
   }
 });
 
-// Chart: Van Bar
+// Van Sales Chart
+const vanData = {
+  reps: ['عمار قاسم', 'ترانزيت', 'Van Sales', 'ماجد ناجي', 'محمد علي', 'طلعت زكي'],
+  totals: [2679.36, 4700.56, 243.0, 799.69, 443.64, 134.27]
+};
 const vanCtx = document.getElementById('vanChart').getContext('2d');
 new Chart(vanCtx, {
   type: 'bar',
   data: {
     labels: vanData.reps,
     datasets: [{
+      label: 'المخزون (كرتون/كيس)',
       data: vanData.totals,
-      backgroundColor: ['#ff6b35', '#a78bfa', '#f472b6', '#ffd700', '#00ff9d'],
-      borderColor: ['#ff6b35', '#a78bfa', '#f472b6', '#ffd700', '#00ff9d'],
+      backgroundColor: [
+        'rgba(255,107,53,0.7)', 'rgba(167,139,250,0.7)', 'rgba(244,114,182,0.7)',
+        'rgba(255,215,0,0.7)', 'rgba(0,255,157,0.7)', 'rgba(0,212,255,0.7)'
+      ],
+      borderColor: ['#ff6b35','#a78bfa','#f472b6','#ffd700','#00ff9d','#00d4ff'],
       borderWidth: 1,
       borderRadius: 6,
     }]
   },
   options: {
-        <a href="products.html" style="color: #00d4ff; text-decoration: none; background: rgba(0,212,255,0.2); padding: 8px 16px; border-radius: 8px; display: inline-block; margin: 10px 0; border: 1px solid #00d4ff;">📊 تفاصيل المنتجات</a> 
     responsive: true,
     maintainAspectRatio: false,
     indexAxis: 'y',
-    plugins: { legend: { display: false } },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: '#111827',
+        borderColor: '#1e2d45',
+        borderWidth: 1,
+        titleColor: '#e2e8f0',
+        bodyColor: '#6b7fa3',
+        titleFont: { family: 'Tajawal' },
+        bodyFont: { family: 'Tajawal' },
+        callbacks: {
+          label: ctx => ` ${ctx.raw.toLocaleString('ar-SA')} كرتون/كيس`
+        }
+      }
+    },
     scales: {
-      x: { grid: { color: 'rgba(30,45,69,0.5)' }, ticks: { color: '#6b7fa3', font: { family: 'Tajawal' } } },
-      y: { grid: { color: 'rgba(30,45,69,0.3)' }, ticks: { color: '#e2e8f0', font: { family: 'Tajawal' } } }
+      x: {
+        grid: { color: 'rgba(30,45,69,0.5)' },
+        ticks: { color: '#6b7fa3', font: { family: 'Tajawal', size: 11 } }
+      },
+      y: {
+        grid: { color: 'rgba(30,45,69,0.3)' },
+        ticks: { color: '#e2e8f0', font: { family: 'Tajawal', size: 11 } }
+      }
     }
   }
 });
