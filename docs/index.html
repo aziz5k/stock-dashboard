@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>داشبورد حركة المخزون</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg: #0a0e1a; --surface: #111827; --accent: #00d4ff; --accent3: #00ff9d;
+  --text: #e2e8f0; --text-muted: #6b7fa3; --red: #ff4757; --yellow: #ffd700; --orange: #ff6b35;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Tajawal', sans-serif; background: var(--bg); color: var(--text); padding: 24px; direction: rtl; }
+.container { max-width: 1200px; margin: 0 auto; }
+
+.header { text-align: center; margin-bottom: 28px; }
+.header h1 { color: var(--accent); font-size: 30px; margin-bottom: 6px; }
+.header p { color: var(--text-muted); font-size: 13px; }
+
+/* شريط التحميل */
+.loading-bar {
+  background: var(--surface); border-radius: 12px; padding: 40px;
+  text-align: center; margin-bottom: 24px; display: none;
+}
+.loading-bar.show { display: block; }
+.spinner { font-size: 32px; animation: spin 1s linear infinite; display: inline-block; }
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+/* انتقاء التاريخ */
+.date-selector {
+  background: var(--surface); border-radius: 12px; padding: 18px 20px;
+  margin-bottom: 20px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+}
+.date-selector label { color: var(--text-muted); font-size: 13px; font-weight: 600; white-space: nowrap; }
+.date-select {
+  background: var(--bg); border: 1px solid #2a3655; color: var(--text);
+  padding: 9px 14px; border-radius: 8px; font-family: inherit; font-size: 14px;
+  flex: 1; min-width: 200px;
+}
+.date-select:focus { outline: none; border-color: var(--accent); }
+.date-badge {
+  background: rgba(0,212,255,0.12); border: 1px solid var(--accent);
+  color: var(--accent); padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 700;
+  white-space: nowrap;
+}
+
+/* رابط المنتجات */
+.products-link {
+  background: linear-gradient(135deg, rgba(0,212,255,0.1), rgba(0,255,157,0.1));
+  border: 1px solid var(--accent); border-radius: 14px; padding: 20px;
+  margin-bottom: 20px; text-align: center;
+}
+.btn-products {
+  display: inline-block; background: var(--accent); color: var(--bg); text-decoration: none;
+  padding: 12px 26px; border-radius: 10px; font-weight: 700; font-size: 15px;
+  transition: all 0.3s; box-shadow: 0 4px 15px rgba(0,212,255,0.3);
+}
+.btn-products:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,212,255,0.5); }
+
+/* KPI */
+.kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
+.kpi-card { background: var(--surface); padding: 18px; border-radius: 12px; border: 1px solid #1e2d45; text-align: center; }
+.kpi-card h3 { font-size: 13px; color: var(--text-muted); margin-bottom: 8px; font-weight: 500; }
+.kpi-value { font-size: 28px; font-weight: 900; color: var(--accent3); margin-bottom: 4px; }
+.kpi-sub { font-size: 11px; color: var(--text-muted); }
+.kpi-change { font-size: 12px; margin-top: 6px; font-weight: 600; }
+.up { color: var(--accent3); } .down { color: var(--red); } .same { color: var(--text-muted); }
+
+/* الرسوم */
+.chart-tall { background: var(--surface); padding: 20px; border-radius: 12px; margin-bottom: 20px; height: 380px; border: 1px solid #1e2d45; }
+.charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 20px; }
+.chart-card { background: var(--surface); padding: 20px; border-radius: 12px; height: 300px; border: 1px solid #1e2d45; }
+.chart-card h3, .chart-tall h3 { font-size: 14px; color: var(--accent); margin-bottom: 14px; font-weight: 700; }
+
+/* جدول الأيام */
+.history-table { background: var(--surface); border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid #1e2d45; overflow-x: auto; }
+.history-table h3 { font-size: 15px; color: var(--accent); margin-bottom: 16px; font-weight: 700; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { background: rgba(0,212,255,0.08); color: var(--accent); padding: 10px 14px; text-align: right; font-weight: 700; border-bottom: 1px solid #2a3655; }
+td { padding: 9px 14px; border-bottom: 1px solid #1e2d45; color: var(--text); }
+tr:hover td { background: rgba(0,212,255,0.04); }
+.change-cell { font-weight: 700; }
+
+/* رسالة عدم وجود بيانات */
+.no-data { text-align: center; padding: 60px; color: var(--text-muted); }
+.no-data .icon { font-size: 48px; margin-bottom: 16px; }
+.no-data p { font-size: 16px; margin-bottom: 8px; }
+.no-data small { font-size: 13px; }
+
+footer { text-align: center; color: var(--text-muted); font-size: 12px; padding: 20px 0; border-top: 1px solid #1e2d45; margin-top: 20px; }
+footer a { color: var(--accent); }
+
+@media (max-width: 768px) {
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+  .charts-row { grid-template-columns: 1fr; }
+  .date-selector { flex-direction: column; align-items: flex-start; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>📊 داشبورد حركة المخزون</h1>
+    <p id="headerSub">جاري تحميل البيانات...</p>
+  </div>
+
+  <div class="loading-bar show" id="loadingBar">
+    <div class="spinner">⏳</div>
+    <p style="margin-top:12px; color: var(--text-muted);">جاري تحميل البيانات التاريخية...</p>
+  </div>
+
+  <div id="mainContent" style="display:none">
+
+    <!-- انتقاء التاريخ -->
+    <div class="date-selector">
+      <label>📅 عرض بيانات يوم:</label>
+      <select id="dateSelect" class="date-select" onchange="selectDay()">
+      </select>
+      <div class="date-badge" id="totalDaysBadge">0 يوم</div>
+    </div>
+
+    <!-- رابط المنتجات -->
+    <div class="products-link">
+      <h3 style="color:var(--accent);margin-bottom:10px;">🔍 تفاصيل المنتجات والمخزون</h3>
+      <p id="productsCountLabel" style="margin-bottom:14px;font-size:14px;">—</p>
+      <a href="products.html" class="btn-products">📋 عرض تفاصيل المنتجات</a>
+    </div>
+
+    <!-- KPI -->
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <h3>إجمالي المخزون الرئيسي</h3>
+        <div class="kpi-value" id="kpiMain">—</div>
+        <div class="kpi-sub">كرتون / وحدة</div>
+        <div class="kpi-change" id="kpiMainChange"></div>
+      </div>
+      <div class="kpi-card">
+        <h3>المخزون التالف</h3>
+        <div class="kpi-value" style="color:var(--red)" id="kpiDamaged">—</div>
+        <div class="kpi-sub">وحدة تالفة</div>
+        <div class="kpi-change" id="kpiDamagedChange"></div>
+      </div>
+      <div class="kpi-card">
+        <h3>إجمالي المنتجات</h3>
+        <div class="kpi-value" id="kpiProducts">—</div>
+        <div class="kpi-sub">منتج في النظام</div>
+        <div class="kpi-change" id="kpiProductsChange"></div>
+      </div>
+      <div class="kpi-card">
+        <h3>أيام البيانات</h3>
+        <div class="kpi-value" style="color:var(--yellow)" id="kpiDays">—</div>
+        <div class="kpi-sub">يوم مسجّل</div>
+        <div class="kpi-change same" id="kpiDaysRange"></div>
+      </div>
+    </div>
+
+    <!-- مخطط التطور التاريخي -->
+    <div class="chart-tall">
+      <h3 id="trendTitle">📈 تطور إجمالي المخزون عبر الأيام</h3>
+      <canvas id="trendChart"></canvas>
+    </div>
+
+    <div class="charts-row">
+      <div class="chart-card">
+        <h3>🏭 توزيع المخزون على المستودعات</h3>
+        <canvas id="warehouseChart"></canvas>
+      </div>
+      <div class="chart-card">
+        <h3>🏆 أعلى 5 منتجات</h3>
+        <canvas id="topChart"></canvas>
+      </div>
+    </div>
+
+    <!-- جدول الأيام -->
+    <div class="history-table">
+      <h3>📋 سجل الأيام</h3>
+      <table id="historyTable">
+        <thead>
+          <tr>
+            <th>التاريخ</th>
+            <th>إجمالي المخزون</th>
+            <th>التغيير</th>
+            <th>التالف</th>
+            <th>عدد المنتجات</th>
+          </tr>
+        </thead>
+        <tbody id="historyBody"></tbody>
+      </table>
+    </div>
+
+  </div>
+
+  <!-- لا بيانات -->
+  <div id="noData" style="display:none">
+    <div class="no-data">
+      <div class="icon">📂</div>
+      <p>لا توجد بيانات بعد</p>
+      <small>ارفع ملف Excel في مجلد <strong>data/</strong> على GitHub وستتحدث البيانات تلقائياً</small>
+    </div>
+  </div>
+
+  <footer>
+    📅 <span id="footerDate">—</span> &nbsp;|&nbsp;
+    🔗 <a href="products.html">تفاصيل المنتجات</a> &nbsp;|&nbsp;
+    📊 <a href="https://github.com/aziz5k/stock-dashboard" target="_blank">GitHub</a>
+  </footer>
+</div>
+
+<script>
+let history = [];
+let trendChart = null, whChart = null, topChart = null;
+const COLORS = ['#00d4ff','#00ff9d','#a78bfa','#ff6b35','#ffd700','#f472b6','#34d399','#fb923c'];
+
+// ===== تحميل البيانات =====
+async function loadData() {
+  try {
+    const res = await fetch('history.json?t=' + Date.now());
+    if (!res.ok) throw new Error('لم يتم إيجاد history.json');
+    history = await res.json();
+    if (!Array.isArray(history) || history.length === 0) throw new Error('لا توجد بيانات');
+    initDashboard();
+  } catch(e) {
+    document.getElementById('loadingBar').classList.remove('show');
+    document.getElementById('noData').style.display = 'block';
+    console.error(e);
+  }
+}
+
+function initDashboard() {
+  document.getElementById('loadingBar').classList.remove('show');
+  document.getElementById('mainContent').style.display = 'block';
+
+  // تعبئة قائمة التواريخ (من الأحدث للأقدم)
+  const sel = document.getElementById('dateSelect');
+  [...history].reverse().forEach((d, i) => {
+    const opt = document.createElement('option');
+    opt.value = d.dateKey;
+    opt.textContent = d.dateLabel + (i === 0 ? ' ← آخر تحديث' : '');
+    sel.appendChild(opt);
+  });
+
+  document.getElementById('totalDaysBadge').textContent = history.length + ' يوم';
+  document.getElementById('kpiDays').textContent = history.length;
+
+  const first = history[0], last = history[history.length - 1];
+  document.getElementById('kpiDaysRange').textContent = first.dateLabel + ' — ' + last.dateLabel;
+  document.getElementById('footerDate').textContent = 'آخر تحديث: ' + last.dateLabel;
+  document.getElementById('headerSub').textContent = 'بيانات مخزون مجمّعة — ' + history.length + ' يوم مسجّل';
+
+  buildTrendChart();
+  buildHistoryTable();
+  selectDay(); // يعرض آخر يوم
+}
+
+// ===== انتقاء يوم =====
+function selectDay() {
+  const key = document.getElementById('dateSelect').value;
+  const idx = history.findIndex(d => d.dateKey === key);
+  if (idx < 0) return;
+  const day = history[idx];
+  const prev = idx > 0 ? history[idx - 1] : null;
+
+  // KPI
+  document.getElementById('kpiMain').textContent = day.mainTotal.toLocaleString('ar-SA', {maximumFractionDigits: 0});
+  document.getElementById('kpiDamaged').textContent = day.damagedTotal.toLocaleString('ar-SA', {maximumFractionDigits: 0});
+  document.getElementById('kpiProducts').textContent = day.products.length;
+  document.getElementById('productsCountLabel').textContent = `${day.products.length} منتج — ${day.dateLabel}`;
+
+  // التغييرات مقارنة باليوم السابق
+  if (prev) {
+    setChange('kpiMainChange', day.mainTotal - prev.mainTotal);
+    setChange('kpiDamagedChange', day.damagedTotal - prev.damagedTotal, true);
+    setChange('kpiProductsChange', day.products.length - prev.products.length);
+  } else {
+    ['kpiMainChange','kpiDamagedChange','kpiProductsChange'].forEach(id => {
+      document.getElementById(id).textContent = 'أول يوم مسجّل';
+      document.getElementById(id).className = 'kpi-change same';
+    });
+  }
+
+  buildWarehouseChart(day);
+  buildTopChart(day);
+}
+
+function setChange(id, diff, invertColor = false) {
+  const el = document.getElementById(id);
+  if (diff > 0) {
+    el.textContent = '⬆️ +' + diff.toLocaleString('ar-SA', {maximumFractionDigits: 0});
+    el.className = 'kpi-change ' + (invertColor ? 'down' : 'up');
+  } else if (diff < 0) {
+    el.textContent = '⬇️ ' + diff.toLocaleString('ar-SA', {maximumFractionDigits: 0});
+    el.className = 'kpi-change ' + (invertColor ? 'up' : 'down');
+  } else {
+    el.textContent = '➡️ لا تغيير';
+    el.className = 'kpi-change same';
+  }
+}
+
+// ===== مخطط التطور التاريخي =====
+function buildTrendChart() {
+  const labels = history.map(d => d.dateLabel);
+  const mainVals = history.map(d => d.mainTotal);
+  const dmgVals = history.map(d => d.damagedTotal);
+
+  if (trendChart) trendChart.destroy();
+  trendChart = new Chart(document.getElementById('trendChart'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'المخزون الرئيسي',
+          data: mainVals,
+          borderColor: '#00d4ff',
+          backgroundColor: 'rgba(0,212,255,0.08)',
+          fill: true, tension: 0.4,
+          pointBackgroundColor: '#00d4ff', pointRadius: 5, borderWidth: 3,
+        },
+        {
+          label: 'التالف',
+          data: dmgVals,
+          borderColor: '#ff4757',
+          backgroundColor: 'rgba(255,71,87,0.05)',
+          fill: false, tension: 0.4,
+          pointBackgroundColor: '#ff4757', pointRadius: 4, borderWidth: 2,
+          borderDash: [5,5]
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'bottom', labels: { color: '#6b7fa3', font: { family: 'Tajawal', size: 12 } } },
+        tooltip: { callbacks: { label: ctx => ' ' + ctx.parsed.y.toLocaleString('ar-SA') } }
+      },
+      scales: {
+        y: {
+          grid: { color: 'rgba(30,45,69,0.5)' },
+          ticks: { color: '#6b7fa3', font: { family: 'Tajawal', size: 11 }, callback: v => v.toLocaleString('ar-SA') }
+        },
+        x: {
+          grid: { color: 'rgba(30,45,69,0.3)' },
+          ticks: { color: '#6b7fa3', font: { family: 'Tajawal', size: 11 } }
+        }
+      }
+    }
+  });
+}
+
+// ===== مخطط المستودعات =====
+function buildWarehouseChart(day) {
+  const wh = day.warehouseTotals || {};
+  const names = Object.keys(wh).filter(k => wh[k] > 0);
+  const vals = names.map(k => wh[k]);
+  if (whChart) whChart.destroy();
+  whChart = new Chart(document.getElementById('warehouseChart'), {
+    type: 'doughnut',
+    data: {
+      labels: names,
+      datasets: [{ data: vals, backgroundColor: COLORS, borderColor: '#111827', borderWidth: 2, hoverOffset: 8 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, cutout: '65%',
+      plugins: { legend: { position: 'bottom', labels: { color: '#6b7fa3', font: { family: 'Tajawal', size: 10 }, padding: 8, boxWidth: 10 } } }
+    }
+  });
+}
+
+// ===== أعلى 5 منتجات =====
+function buildTopChart(day) {
+  const top5 = [...day.products].sort((a,b) => b.totalStock - a.totalStock).slice(0,5);
+  if (topChart) topChart.destroy();
+  topChart = new Chart(document.getElementById('topChart'), {
+    type: 'bar',
+    data: {
+      labels: top5.map(p => p.name.length > 18 ? p.name.substring(0,18)+'...' : p.name),
+      datasets: [{
+        label: 'المخزون',
+        data: top5.map(p => p.totalStock),
+        backgroundColor: COLORS.slice(0,5).map(c => c + 'B3'),
+        borderColor: COLORS.slice(0,5),
+        borderWidth: 1, borderRadius: 6
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: 'rgba(30,45,69,0.5)' }, ticks: { color: '#6b7fa3', font: { family: 'Tajawal', size: 11 }, callback: v => v.toLocaleString('ar-SA') } },
+        y: { grid: { color: 'rgba(30,45,69,0.3)' }, ticks: { color: '#e2e8f0', font: { family: 'Tajawal', size: 11 } } }
+      }
+    }
+  });
+}
+
+// ===== جدول الأيام =====
+function buildHistoryTable() {
+  const tbody = document.getElementById('historyBody');
+  const rows = [...history].reverse();
+  tbody.innerHTML = rows.map((d, i) => {
+    const prev = i < rows.length - 1 ? rows[i+1] : null;
+    const diff = prev ? d.mainTotal - prev.mainTotal : null;
+    let diffHtml = '<span style="color:var(--text-muted)">—</span>';
+    if (diff !== null) {
+      if (diff > 0) diffHtml = `<span class="change-cell up">⬆️ +${diff.toLocaleString('ar-SA', {maximumFractionDigits:0})}</span>`;
+      else if (diff < 0) diffHtml = `<span class="change-cell down">⬇️ ${diff.toLocaleString('ar-SA', {maximumFractionDigits:0})}</span>`;
+      else diffHtml = `<span class="change-cell same">➡️ لا تغيير</span>`;
+    }
+    return `<tr>
+      <td><strong>${d.dateLabel}</strong></td>
+      <td>${d.mainTotal.toLocaleString('ar-SA', {maximumFractionDigits:0})}</td>
+      <td>${diffHtml}</td>
+      <td style="color:var(--red)">${d.damagedTotal.toLocaleString('ar-SA', {maximumFractionDigits:0})}</td>
+      <td>${d.products.length}</td>
+    </tr>`;
+  }).join('');
+}
+
+loadData();
+</script>
+</body>
+</html>

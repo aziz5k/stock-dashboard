@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>تفاصيل المنتجات والمخزون</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg: #0a0e1a; --surface: #111827; --accent: #00d4ff; --accent3: #00ff9d;
+  --text: #e2e8f0; --text-muted: #6b7fa3; --red: #ff4757; --orange: #ff6b35; --yellow: #ffd700;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Tajawal', sans-serif; background: var(--bg); color: var(--text); padding: 24px; direction: rtl; min-height: 100vh; }
+.container { max-width: 1400px; margin: 0 auto; }
+.header { text-align: center; margin-bottom: 20px; }
+.header h1 { color: var(--accent); font-size: 26px; margin-bottom: 6px; }
+.header p { color: var(--text-muted); font-size: 13px; }
+
+.nav-bar { background: var(--surface); border-radius: 12px; padding: 14px 18px; margin-bottom: 18px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+.back-btn { background: var(--accent); color: var(--bg); text-decoration: none; padding: 9px 18px; border-radius: 8px; font-weight: 700; font-size: 14px; }
+.back-btn:hover { opacity: 0.85; }
+
+/* انتقاء التاريخ */
+.date-bar { background: var(--surface); border-radius: 12px; padding: 14px 18px; margin-bottom: 16px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.date-bar label { color: var(--text-muted); font-size: 13px; font-weight: 600; white-space: nowrap; }
+.date-select { background: var(--bg); border: 1px solid #2a3655; color: var(--text); padding: 9px 14px; border-radius: 8px; font-family: inherit; font-size: 14px; flex: 1; min-width: 200px; }
+.date-select:focus { outline: none; border-color: var(--accent); }
+
+.filters { background: var(--surface); border-radius: 12px; padding: 16px 18px; margin-bottom: 16px; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+.filter-group { display: flex; flex-direction: column; gap: 5px; }
+.filter-group label { color: var(--text-muted); font-size: 12px; font-weight: 600; }
+.filter-input, .filter-select { background: var(--bg); border: 1px solid #2a3655; color: var(--text); padding: 9px 12px; border-radius: 8px; font-family: inherit; font-size: 14px; }
+.filter-input:focus, .filter-select:focus { outline: none; border-color: var(--accent); }
+
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 14px; margin-bottom: 16px; }
+.stat-card { background: var(--surface); padding: 16px; border-radius: 12px; text-align: center; border: 1px solid #1e2d45; }
+.stat-value { font-size: 22px; font-weight: bold; margin: 6px 0; }
+.stat-label { color: var(--text-muted); font-size: 11px; }
+
+.products-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); gap: 16px; margin-bottom: 16px; }
+.product-card { background: var(--surface); border-radius: 12px; padding: 16px; border: 1px solid #1e2d45; transition: all 0.25s; }
+.product-card:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: 0 4px 20px rgba(0,212,255,0.1); }
+
+.product-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+.product-code { font-size: 12px; color: var(--accent); font-weight: 700; }
+.status-badge { padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; }
+.status-active { background: rgba(0,255,157,0.15); color: var(--accent3); }
+.status-low { background: rgba(255,215,0,0.15); color: var(--yellow); }
+.status-critical { background: rgba(255,71,87,0.15); color: var(--red); }
+.status-damaged { background: rgba(255,107,53,0.15); color: var(--orange); }
+
+.product-name { font-size: 14px; font-weight: 700; margin-bottom: 4px; line-height: 1.4; }
+.product-category { color: var(--text-muted); font-size: 12px; margin-bottom: 10px; }
+
+.stock-info { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+.stock-item { text-align: center; padding: 8px; background: rgba(0,0,0,0.25); border-radius: 8px; }
+.stock-value { font-size: 15px; font-weight: 700; }
+.stock-label { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+.warehouse-list { border-top: 1px solid #1e2d45; padding-top: 10px; }
+.wh-title { color: var(--text-muted); font-size: 11px; font-weight: 600; margin-bottom: 6px; }
+.warehouse-item { display: flex; justify-content: space-between; padding: 4px 0; font-size: 12px; border-bottom: 1px solid rgba(255,255,255,0.04); }
+.warehouse-item:last-child { border-bottom: none; }
+.warehouse-name { color: var(--text-muted); }
+.warehouse-stock { font-weight: 700; }
+
+.pagination { display: flex; justify-content: center; align-items: center; gap: 10px; margin: 14px 0; }
+.pagination button { background: var(--surface); color: var(--text); border: 1px solid #2a3655; padding: 7px 14px; border-radius: 8px; cursor: pointer; font-family: inherit; font-size: 13px; transition: all 0.2s; }
+.pagination button:hover:not(:disabled) { background: var(--accent); color: var(--bg); }
+.pagination button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.charts-section { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 24px; }
+.chart-card { background: var(--surface); padding: 18px; border-radius: 12px; border: 1px solid #1e2d45; height: 290px; }
+.chart-title { color: var(--accent); font-size: 14px; font-weight: 700; margin-bottom: 12px; text-align: center; }
+
+.empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); grid-column: 1/-1; }
+.empty-state .icon { font-size: 40px; margin-bottom: 12px; }
+
+footer { color: var(--text-muted); font-size: 12px; padding: 16px 0; border-top: 1px solid #1e2d45; margin-top: 24px; text-align: center; }
+footer a { color: var(--accent); }
+
+@media (max-width: 768px) {
+  body { padding: 14px; }
+  .products-grid { grid-template-columns: 1fr; }
+  .charts-section { grid-template-columns: 1fr; }
+  .nav-bar { flex-direction: column; align-items: flex-start; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>📋 تفاصيل المنتجات والمخزون</h1>
+    <p id="pageSubtitle">جاري تحميل البيانات...</p>
+  </div>
+
+  <div class="nav-bar">
+    <a href="index.html" class="back-btn">← الداشبورد الرئيسي</a>
+    <span id="resultsCount" style="color:var(--text-muted);font-size:13px;">—</span>
+  </div>
+
+  <!-- انتقاء التاريخ -->
+  <div class="date-bar">
+    <label>📅 عرض بيانات يوم:</label>
+    <select id="dateSelect" class="date-select" onchange="selectDay()"></select>
+  </div>
+
+  <div class="filters">
+    <div class="filter-group"><label>🔍 البحث</label><input type="text" id="searchInput" class="filter-input" placeholder="اسم المنتج، الكود، الفئة..."></div>
+    <div class="filter-group">
+      <label>📦 الفئة</label>
+      <select id="categoryFilter" class="filter-select">
+        <option value="">جميع الفئات</option>
+        <option>شاي ومشروبات</option><option>منظفات</option><option>فحم</option>
+        <option>حطب</option><option>أرز</option><option>ولاعات</option>
+        <option>إكسسوارات</option><option>معدات</option><option>مخزون تالف</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>🚦 الحالة</label>
+      <select id="statusFilter" class="filter-select">
+        <option value="">جميع الحالات</option>
+        <option value="نشط">نشط</option><option value="منخفض">منخفض</option>
+        <option value="نفد">نفد</option><option value="تالف">تالف</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>🏭 المستودع</label>
+      <select id="warehouseFilter" class="filter-select">
+        <option value="">جميع المستودعات</option>
+        <option>الرياض</option><option>القصيم</option><option>الدمام</option>
+        <option>جدة</option><option>خميس مشيط</option><option>ترانزيت</option><option>مشتريات</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card"><div class="stat-value" style="color:var(--accent)" id="sc-total">—</div><div class="stat-label">إجمالي</div></div>
+    <div class="stat-card"><div class="stat-value" style="color:var(--accent3)" id="sc-active">—</div><div class="stat-label">نشط</div></div>
+    <div class="stat-card"><div class="stat-value" style="color:var(--yellow)" id="sc-low">—</div><div class="stat-label">منخفض</div></div>
+    <div class="stat-card"><div class="stat-value" style="color:var(--red)" id="sc-out">—</div><div class="stat-label">نفد</div></div>
+    <div class="stat-card"><div class="stat-value" style="color:var(--orange)" id="sc-damaged">—</div><div class="stat-label">تالف</div></div>
+  </div>
+
+  <div id="productsGrid" class="products-grid">
+    <div class="empty-state"><div class="icon">⏳</div><div>جاري تحميل البيانات...</div></div>
+  </div>
+
+  <div class="pagination">
+    <button id="prevBtn" onclick="changePage(-1)" disabled>السابق</button>
+    <span id="pageInfo" style="color:var(--text-muted);font-size:13px;">—</span>
+    <button id="nextBtn" onclick="changePage(1)" disabled>التالي</button>
+  </div>
+
+  <div class="charts-section">
+    <div class="chart-card"><div class="chart-title">توزيع المنتجات حسب الفئة</div><canvas id="categoryChart"></canvas></div>
+    <div class="chart-card"><div class="chart-title">حالة المخزون</div><canvas id="statusChart"></canvas></div>
+  </div>
+
+  <footer>
+    📅 <span id="footerDate">—</span> &nbsp;|&nbsp;
+    🔗 <a href="index.html">الداشبورد الرئيسي</a> &nbsp;|&nbsp;
+    📊 <a href="https://github.com/aziz5k/stock-dashboard" target="_blank">GitHub</a>
+  </footer>
+</div>
+
+<script>
+let historyData = [];
+let currentDayProducts = [];
+let filteredProducts = [];
+let currentPage = 1;
+const itemsPerPage = 12;
+let catChart = null, statChart = null;
+
+async function loadData() {
+  try {
+    const res = await fetch('history.json?t=' + Date.now());
+    if (!res.ok) throw new Error('404');
+    historyData = await res.json();
+    if (!Array.isArray(historyData) || historyData.length === 0) throw new Error('empty');
+    initPage();
+  } catch(e) {
+    document.getElementById('pageSubtitle').textContent = 'لا توجد بيانات — ارفع ملف Excel على GitHub';
+    document.getElementById('productsGrid').innerHTML = '<div class="empty-state"><div class="icon">📂</div><div>ارفع ملف Excel في مجلد data/ على GitHub</div></div>';
+  }
+}
+
+function initPage() {
+  const sel = document.getElementById('dateSelect');
+  [...historyData].reverse().forEach((d, i) => {
+    const opt = document.createElement('option');
+    opt.value = d.dateKey;
+    opt.textContent = d.dateLabel + (i === 0 ? ' ← آخر تحديث' : '');
+    sel.appendChild(opt);
+  });
+  selectDay();
+}
+
+function selectDay() {
+  const key = document.getElementById('dateSelect').value;
+  const day = historyData.find(d => d.dateKey === key);
+  if (!day) return;
+
+  const allProducts = [
+    ...day.products,
+    ...(day.damagedProducts || [])
+  ];
+
+  currentDayProducts = allProducts;
+  document.getElementById('pageSubtitle').textContent = `${allProducts.length} منتج — ${day.dateLabel}`;
+  document.getElementById('footerDate').textContent = `آخر تحديث: ${day.dateLabel}`;
+
+  filterProducts();
+  initCharts(allProducts);
+}
+
+function filterProducts() {
+  const search = document.getElementById('searchInput').value.toLowerCase().trim();
+  const cat = document.getElementById('categoryFilter').value;
+  const status = document.getElementById('statusFilter').value;
+  const wh = document.getElementById('warehouseFilter').value;
+
+  filteredProducts = currentDayProducts.filter(p => {
+    const ms = !search || p.name.toLowerCase().includes(search) || p.code.toLowerCase().includes(search) || p.category.toLowerCase().includes(search);
+    const mc = !cat || p.category === cat;
+    const mst = !status || p.status === status;
+    const mw = !wh || Object.keys(p.warehouses || {}).some(w => w.includes(wh));
+    return ms && mc && mst && mw;
+  });
+
+  currentPage = 1;
+  renderProducts();
+  updateStats();
+}
+
+function getStatusCls(s) {
+  return { 'نشط':'status-active','منخفض':'status-low','نفد':'status-critical','تالف':'status-damaged' }[s] || 'status-low';
+}
+
+function renderProducts() {
+  const start = (currentPage - 1) * itemsPerPage;
+  const items = filteredProducts.slice(start, start + itemsPerPage);
+  const grid = document.getElementById('productsGrid');
+
+  if (items.length === 0) {
+    grid.innerHTML = '<div class="empty-state"><div class="icon">🔍</div><div>لا توجد منتجات مطابقة</div></div>';
+  } else {
+    grid.innerHTML = items.map(p => {
+      const sc = getStatusCls(p.status);
+      const stockColor = {'نشط':'var(--accent3)','منخفض':'var(--yellow)','نفد':'var(--red)','تالف':'var(--orange)'}[p.status]||'var(--text)';
+      const whe = Object.entries(p.warehouses || {});
+      const whHTML = whe.length > 0
+        ? whe.map(([wn,ws]) => `<div class="warehouse-item"><span class="warehouse-name">${wn}</span><span class="warehouse-stock">${ws.toLocaleString('ar-SA',{minimumFractionDigits:2,maximumFractionDigits:2})}</span></div>`).join('')
+        : '<div style="color:var(--text-muted);font-size:12px;text-align:center;padding:5px;">لا يوجد مخزون</div>';
+      return `<div class="product-card">
+        <div class="product-header"><div class="product-code">${p.code}</div><div class="status-badge ${sc}">${p.status}</div></div>
+        <div class="product-name">${p.name}</div>
+        <div class="product-category">📂 ${p.category}</div>
+        <div class="stock-info">
+          <div class="stock-item"><div class="stock-value" style="color:${stockColor}">${p.totalStock.toLocaleString('ar-SA',{minimumFractionDigits:2,maximumFractionDigits:2})}</div><div class="stock-label">إجمالي المخزون</div></div>
+          <div class="stock-item"><div class="stock-value" style="color:var(--accent)">${whe.length}</div><div class="stock-label">مستودعات نشطة</div></div>
+        </div>
+        <div class="warehouse-list"><div class="wh-title">🏭 توزيع المستودعات</div>${whHTML}</div>
+      </div>`;
+    }).join('');
+  }
+
+  const totalPages = Math.max(1, Math.ceil(filteredProducts.length / itemsPerPage));
+  document.getElementById('pageInfo').textContent = `صفحة ${currentPage} من ${totalPages}`;
+  document.getElementById('prevBtn').disabled = currentPage <= 1;
+  document.getElementById('nextBtn').disabled = currentPage >= totalPages;
+  document.getElementById('resultsCount').textContent = `عرض ${filteredProducts.length} من ${currentDayProducts.length} منتج`;
+}
+
+function changePage(d) {
+  const total = Math.max(1, Math.ceil(filteredProducts.length / itemsPerPage));
+  const np = currentPage + d;
+  if (np >= 1 && np <= total) { currentPage = np; renderProducts(); window.scrollTo({top:0,behavior:'smooth'}); }
+}
+
+function updateStats() {
+  document.getElementById('sc-total').textContent = filteredProducts.length;
+  document.getElementById('sc-active').textContent = filteredProducts.filter(p=>p.status==='نشط').length;
+  document.getElementById('sc-low').textContent = filteredProducts.filter(p=>p.status==='منخفض').length;
+  document.getElementById('sc-out').textContent = filteredProducts.filter(p=>p.status==='نفد').length;
+  document.getElementById('sc-damaged').textContent = filteredProducts.filter(p=>p.status==='تالف').length;
+}
+
+function initCharts(products) {
+  const colors = ['#00d4ff','#00ff9d','#ff6b35','#ffd700','#a78bfa','#f472b6','#8b5cf6','#34d399','#fb923c'];
+  const cats = products.reduce((a,p)=>{ a[p.category]=(a[p.category]||0)+1; return a; },{});
+
+  if (catChart) catChart.destroy();
+  catChart = new Chart(document.getElementById('categoryChart'),{
+    type:'doughnut',
+    data:{labels:Object.keys(cats),datasets:[{data:Object.values(cats),backgroundColor:colors,borderColor:'#111827',borderWidth:2,hoverOffset:8}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'60%',plugins:{legend:{position:'bottom',labels:{color:'#6b7fa3',font:{family:'Tajawal',size:11},padding:10,boxWidth:12}}}}
+  });
+
+  const statuses=['نشط','منخفض','نفد','تالف'];
+  const counts=statuses.map(s=>products.filter(p=>p.status===s).length);
+  if (statChart) statChart.destroy();
+  statChart = new Chart(document.getElementById('statusChart'),{
+    type:'bar',
+    data:{labels:statuses,datasets:[{data:counts,backgroundColor:['#00ff9d','#ffd700','#ff4757','#ff6b35'],borderColor:'#111827',borderWidth:1,borderRadius:8}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{grid:{color:'rgba(30,45,69,0.5)'},ticks:{color:'#6b7fa3',font:{family:'Tajawal'}}},x:{grid:{color:'rgba(30,45,69,0.3)'},ticks:{color:'#e2e8f0',font:{family:'Tajawal',size:13}}}}}
+  });
+}
+
+document.getElementById('searchInput').addEventListener('input', filterProducts);
+document.getElementById('categoryFilter').addEventListener('change', filterProducts);
+document.getElementById('statusFilter').addEventListener('change', filterProducts);
+document.getElementById('warehouseFilter').addEventListener('change', filterProducts);
+
+loadData();
+</script>
+</body>
+</html>
